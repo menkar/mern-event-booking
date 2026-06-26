@@ -1,0 +1,38 @@
+# Environment variables (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime / process files
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Uploads & local storage
+uploads/
+public/uploads/
+storage/
+
+# Database dumps
+dump/
+*.sqlite
+*.sqlite3
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# OS & editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
