@@ -1,0 +1,18 @@
+{
+  "name": "swap-events-hub",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Swap Events Hub — MERN event booking platform",
+  "scripts": {
+    "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "start": "concurrently -n server,client -c blue,green \"npm run start --prefix server\" \"npm run preview --prefix client\"",
+    "build": "npm run build --prefix client",
+    "seed": "npm run seed --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

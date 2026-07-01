@@ -14,7 +14,7 @@ import {
 
 const navLinkClass = ({ isActive }) =>
   [
-    'rounded-md px-4 py-2 text-base font-medium transition-colors',
+    'cursor-pointer rounded-md px-4 py-2 text-base font-medium transition-colors',
     isActive
       ? 'bg-indigo-50 text-indigo-700'
       : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900',
@@ -22,7 +22,7 @@ const navLinkClass = ({ isActive }) =>
 
 const mobileNavLinkClass = ({ isActive }) =>
   [
-    'block rounded-md px-4 py-3 text-base font-medium transition-colors',
+    'block cursor-pointer rounded-md px-4 py-3 text-base font-medium transition-colors',
     isActive
       ? 'bg-indigo-50 text-indigo-700'
       : 'text-slate-800 hover:bg-slate-100',
@@ -70,7 +70,7 @@ const Navbar = () => {
       >
         <Link
           to="/"
-          className="group flex min-w-0 shrink items-center gap-3"
+          className="group flex min-w-0 shrink cursor-pointer items-center gap-3"
           onClick={closeMobileMenu}
         >
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm transition group-hover:bg-indigo-700">
@@ -109,7 +109,7 @@ const Navbar = () => {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2.5 text-base font-medium text-white transition hover:bg-slate-800"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-slate-900 px-4 py-2.5 text-base font-medium text-white transition hover:bg-slate-800"
               >
                 <FaSignOutAlt aria-hidden="true" />
                 Logout
@@ -119,14 +119,14 @@ const Navbar = () => {
             <div className="ml-4 flex items-center gap-3 border-l border-slate-200 pl-4 xl:ml-6 xl:pl-6">
               <Link
                 to="/login"
-                className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-base font-medium text-slate-800 transition hover:bg-slate-50"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-base font-medium text-slate-800 transition hover:bg-slate-50"
               >
                 <FaSignInAlt aria-hidden="true" />
                 Sign In
               </Link>
               <Link
                 to="/register"
-                className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2.5 text-base font-medium text-white transition hover:bg-indigo-700"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-indigo-600 px-4 py-2.5 text-base font-medium text-white transition hover:bg-indigo-700"
               >
                 <FaUserPlus aria-hidden="true" />
                 Get Started
@@ -137,7 +137,7 @@ const Navbar = () => {
 
         <button
           type="button"
-          className="inline-flex shrink-0 items-center justify-center rounded-md p-2.5 text-slate-800 transition hover:bg-slate-100 lg:hidden"
+          className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md p-2.5 text-slate-800 transition hover:bg-slate-100 lg:hidden"
           aria-expanded={mobileOpen}
           aria-controls="mobile-menu"
           aria-label={mobileOpen ? 'Close menu' : 'Open menu'}

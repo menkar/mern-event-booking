@@ -3,6 +3,7 @@ const User = require('../models/User');
 const OTP = require("../models/Otp");
 const jwt = require('jsonwebtoken');
 const { sendOTPEmail } = require("../utils/email");
+const { normalizeOtp, normalizeEmail } = require("../utils/otpHelpers");
 
 const generateOtp = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -27,9 +28,11 @@ const registerUser = async(req, res) => {
         const user = await User.create({name, email, password: hashedPassword, role: "user", isVerified: false});
         
         const otp = generateOtp();
-        console.log(`OTP for ${email} : ${otp}`);
+        const normalizedEmail = normalizeEmail(email);
+        console.log(`OTP for ${normalizedEmail} : ${otp}`);
 
-        await OTP.create({email, otp, action: "account_verification"});
+        await OTP.findOneAndDelete({ email: normalizedEmail, action: 'account_verification' });
+        await OTP.create({ email: normalizedEmail, otp, action: 'account_verification' });
         await sendOTPEmail(email, otp, 'account_verification');
         
         res.status(201).json({message: "User registered successfully. Please check your email for OTP to verify your account.",
@@ -54,9 +57,11 @@ const loginUser = async(req, res) => {
 
         if (!user.isVerified && user.role !== "admin") {
             const otp = generateOtp();
-            await OTP.findOneAndDelete({email: user.email, action: 'account_verification'});
-            await OTP.create({email: user.email, otp, action: 'account_verification'});
+            const normalizedEmail = normalizeEmail(user.email);
+            await OTP.findOneAndDelete({ email: normalizedEmail, action: 'account_verification' });
+            await OTP.create({ email: normalizedEmail, otp, action: 'account_verification' });
             await sendOTPEmail(user.email, otp, 'account_verification');
+            console.log(`OTP for ${normalizedEmail} : ${otp}`);
             return res.status(403).json({ message: 'Account not verified', needsVerification: true, email: user.email});
         }
 
@@ -76,14 +81,29 @@ const loginUser = async(req, res) => {
 
 const verifyOtp = async(req, res) => {
     try {
-        const {email, otp} = req.body;
-        const validOtp = await OTP.findOne({email, otp, action: 'account_verification'});
+        const email = normalizeEmail(req.body.email);
+        const otpCode = normalizeOtp(req.body.otp);
+
+        if (!otpCode || otpCode.length !== 6) {
+            return res.status(400).json({ message: 'Please enter a valid 6-digit OTP' });
+        }
+
+        const validOtp = await OTP.findOne({ email, otp: otpCode, action: 'account_verification' });
 
         if (!validOtp) {
             return res.status(400).json({message: 'Invalid or expired OTP'});
         }
 
-        const user = await User.findOneAndUpdate({ email }, { isVerified: true }, { new: true});
+        const user = await User.findOne({
+            email: { $regex: new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'User not found' });
+        }
+
+        user.isVerified = true;
+        await user.save();
         await OTP.deleteOne({ _id: validOtp._id});
 
         res.json({

@@ -1,23 +1,48 @@
 # =========================
-# Environment & secrets
+# Environment & secrets (NEVER commit)
 # =========================
 .env
 .env.*
-!.env.example
-!.env.*.example
+.env.example
+.env.*.example
+.envrc
 *.local
 
-# API keys, certificates, credentials
+# API keys, tokens, certificates, credentials
 *.pem
 *.key
 *.p12
 *.pfx
 *.crt
 *.cer
+*.ppk
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
 credentials.json
 secrets.json
+*.secret
+*.secrets
+secrets/
 serviceAccountKey.json
 firebase-adminsdk*.json
+auth.json
+.sentryclirc
+
+# Local config overrides (may contain secrets)
+config/local.js
+config/local.json
+config/production.local.js
+config/production.local.json
+
+# Postman / API tooling — real environment files often hold tokens
+*postman_environment*.json
+!*postman_environment*.example.json
+
+# Docker local overrides (often contain credentials)
+docker-compose.override.yml
+docker-compose.override.yaml
 
 # =========================
 # Dependencies
@@ -25,11 +50,19 @@ firebase-adminsdk*.json
 node_modules/
 jspm_packages/
 bower_components/
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.npm
 
 # =========================
 # Build outputs
 # =========================
 dist/
+dist-ssr/
 build/
 out/
 .next/
@@ -37,6 +70,7 @@ out/
 .cache/
 .parcel-cache/
 .turbo/
+.vite/
 storybook-static/
 
 # =========================
@@ -50,6 +84,9 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 .pnpm-debug.log*
+pids/
+*.pid
+*.pid.lock
 
 # =========================
 # Testing & coverage
@@ -71,6 +108,22 @@ playwright/.cache/
 dump/
 dumps/
 data/mongo/
+mongodb_data/
+
+# =========================
+# Uploads & user-generated content
+# =========================
+uploads/
+public/uploads/
+storage/
+tmp/uploads/
+
+# =========================
+# SSL / private keys (server)
+# =========================
+ssl/
+certs/
+private/
 
 # =========================
 # OS generated files
@@ -91,6 +144,7 @@ Desktop.ini
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json.example
+.cursor/
 *.swp
 *.swo
 *~
@@ -111,14 +165,12 @@ temp/
 *.backup
 
 # =========================
-# Package manager
+# Deployment & hosting
 # =========================
-.pnp
-.pnp.js
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
+.vercel
+.netlify
+.firebase/
+.serverless/
 
 # =========================
 # Misc
@@ -126,5 +178,3 @@ temp/
 *.tsbuildinfo
 .eslintcache
 .stylelintcache
-.vercel
-.netlify

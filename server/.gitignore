@@ -1,38 +1,83 @@
-# Environment variables (never commit secrets)
+# =========================
+# Environment & secrets (NEVER commit)
+# =========================
 .env
 .env.*
-!.env.example
+.env.example
+.envrc
 
+# JWT, email, DB credentials — keep in .env only
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+credentials.json
+secrets.json
+*.secret
+secrets/
+
+# Local config overrides
+config/local.js
+config/local.json
+
+# =========================
 # Dependencies
+# =========================
 node_modules/
 
-# Logs
+# =========================
+# Logs & runtime
+# =========================
 logs/
 *.log
 npm-debug.log*
-
-# Runtime / process files
+yarn-debug.log*
+pnpm-debug.log*
 pids/
 *.pid
 *.seed
 *.pid.lock
 
+# =========================
 # Uploads & local storage
+# =========================
 uploads/
 public/uploads/
 storage/
+tmp/
 
-# Database dumps
+# =========================
+# SSL / certificates
+# =========================
+ssl/
+certs/
+private/
+
+# =========================
+# Database dumps & local DB files
+# =========================
 dump/
+dumps/
+data/
 *.sqlite
 *.sqlite3
+*.db
+mongodb_data/
 
+# =========================
 # Test coverage
+# =========================
 coverage/
 .nyc_output/
 
+# =========================
 # OS & editor
+# =========================
 .DS_Store
 Thumbs.db
+Desktop.ini
 .idea/
 .vscode/
+.cursor/

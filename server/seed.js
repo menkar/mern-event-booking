@@ -5,6 +5,7 @@ const User = require("./models/User");
 const Event = require("./models/Event");
 const Booking = require("./models/Booking");
 const OTP = require("./models/Otp");
+const { EVENT_IMAGES } = require("./constants/eventImages");
 
 const DEFAULT_PASSWORD = "Password@123";
 
@@ -74,7 +75,7 @@ const seedDatabase = async () => {
                 totalSeats: 500,
                 availableSeats: 498,
                 ticketPrice: 49.99,
-                image: "https://example.com/images/music-festival.jpg",
+                image: EVENT_IMAGES.music,
                 createdBy: admin._id,
             },
             {
@@ -86,7 +87,7 @@ const seedDatabase = async () => {
                 totalSeats: 200,
                 availableSeats: 200,
                 ticketPrice: 129.0,
-                image: "https://example.com/images/tech-summit.jpg",
+                image: EVENT_IMAGES.tech,
                 createdBy: admin._id,
             },
             {
@@ -98,7 +99,7 @@ const seedDatabase = async () => {
                 totalSeats: 100,
                 availableSeats: 0,
                 ticketPrice: 35.0,
-                image: "https://example.com/images/marathon.jpg",
+                image: EVENT_IMAGES.sports,
                 createdBy: admin._id,
             },
             {
@@ -110,7 +111,7 @@ const seedDatabase = async () => {
                 totalSeats: 50,
                 availableSeats: 50,
                 ticketPrice: 25.0,
-                image: "https://example.com/images/art-expo.jpg",
+                image: EVENT_IMAGES.arts,
                 createdBy: admin._id,
             },
             {
@@ -122,7 +123,7 @@ const seedDatabase = async () => {
                 totalSeats: 300,
                 availableSeats: 300,
                 ticketPrice: 0,
-                image: "https://example.com/images/food-carnival.jpg",
+                image: EVENT_IMAGES.food,
                 createdBy: admin._id,
             },
         ]);

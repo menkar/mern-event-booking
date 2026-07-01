@@ -1,22 +1,35 @@
-# Environment variables (Vite exposes VITE_* to the browser — keep private keys out)
+# =========================
+# Environment & secrets (NEVER commit)
+# Vite exposes VITE_* vars to the browser — never put private keys here
+# =========================
 .env
 .env.*
-!.env.example
-!.env.local.example
+.env.example
+.env.local.example
+.envrc
+*.local
 
+# =========================
 # Dependencies
+# =========================
 node_modules/
 
+# =========================
 # Production build
+# =========================
 dist/
 dist-ssr/
 build/
 
+# =========================
 # Vite / dev cache
+# =========================
 .vite/
-*.local
+.cache/
 
+# =========================
 # Logs
+# =========================
 logs/
 *.log
 npm-debug.log*
@@ -24,17 +37,34 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# =========================
 # Testing
+# =========================
 coverage/
 .nyc_output/
 test-results/
 playwright-report/
+playwright/.cache/
 
-# ESLint cache
+# =========================
+# Tooling cache
+# =========================
 .eslintcache
+.stylelintcache
+*.tsbuildinfo
 
+# =========================
+# Deployment
+# =========================
+.vercel
+.netlify
+
+# =========================
 # OS & editor
+# =========================
 .DS_Store
 Thumbs.db
+Desktop.ini
 .idea/
 .vscode/
+.cursor/

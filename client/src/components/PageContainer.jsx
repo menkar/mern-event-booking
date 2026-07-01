@@ -3,14 +3,30 @@ const CONTAINER_CLASS =
 
 export { CONTAINER_CLASS };
 
-const PageContainer = ({ title, subtitle, children, className = '' }) => {
+const PageContainer = ({
+  title,
+  subtitle,
+  children,
+  className = '',
+  hideHeader = false,
+  fullWidth = false,
+  compact = false,
+}) => {
+  const paddingClass = compact
+    ? 'py-5 sm:py-6 lg:py-7'
+    : 'py-8 sm:py-10 lg:py-12';
+
   return (
     <section className={`w-full ${className}`}>
-      <div className={`${CONTAINER_CLASS} py-8 sm:py-10 lg:py-12`}>
-        {(title || subtitle) && (
-          <header className="mb-8 border-b border-slate-200 pb-6 sm:mb-10">
+      <div
+        className={`${fullWidth ? 'w-full' : CONTAINER_CLASS} ${paddingClass}`}
+      >
+        {!hideHeader && (title || subtitle) && (
+          <header
+            className={`border-b border-slate-200 pb-4 ${compact ? 'mb-5 sm:mb-6' : 'mb-8 pb-6 sm:mb-10'}`}
+          >
             {title && (
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
                 {title}
               </h1>
             )}
