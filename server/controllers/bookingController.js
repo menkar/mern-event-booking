@@ -34,9 +34,16 @@ const sendBookingOTP = async (req, res) => {
 
         await OTP.findOneAndDelete({ email, action: 'event_booking' });
         await OTP.create({ email, otp, action: 'event_booking' });
-        await sendOTPEmail(req.user.email, otp, 'event_booking');
 
-        console.log(`Booking OTP for ${email}: ${otp}`);
+        try {
+            await sendOTPEmail(req.user.email, otp, 'event_booking');
+        } catch (emailError) {
+            await OTP.findOneAndDelete({ email, action: 'event_booking' });
+            console.error('Booking OTP email failed:', emailError.message);
+            return res.status(503).json({
+                message: emailError.message || 'Unable to send OTP email. Please try again later.',
+            });
+        }
 
         res.json({ message: 'OTP sent successfully' });
     } catch (error) {
@@ -127,7 +134,11 @@ const confirmBooking = async (req, res) => {
         event.availableSeats -= 1;
         await event.save();
 
-        await sendBookingEmail(booking.userId.email, booking.userId.name, booking.eventId.title);
+        try {
+            await sendBookingEmail(booking.userId.email, booking.userId.name, booking.eventId.title);
+        } catch (emailError) {
+            console.error('Booking confirmation email failed:', emailError.message);
+        }
 
         res.status(200).json({ message: 'Booking confirmed successfully', booking });
     } catch (error) {

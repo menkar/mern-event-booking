@@ -1,3 +1,4 @@
+const dns = require('dns');
 const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
 
@@ -7,13 +8,188 @@ const BRAND_NAME = 'Swap Events Hub Client';
 const BRAND_COLOR = '#4f46e5';
 const BRAND_DARK = '#0f172a';
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const strip = (value) => String(value || '').trim();
+
+const isLocalEnvironment = () =>
+  process.env.NODE_ENV !== 'production' && process.env.RENDER !== 'true';
+
+const resolveProvider = () => {
+  const explicit = strip(process.env.EMAIL_PROVIDER).toLowerCase();
+  if (explicit) return explicit;
+
+  if (isLocalEnvironment()) {
+    return 'smtp';
+  }
+
+  if (strip(process.env.RESEND_API_KEY)) return 'resend';
+  if (strip(process.env.BREVO_API_KEY)) return 'brevo';
+  return 'smtp';
+};
+
+const getFromAddress = () => {
+  const from = strip(process.env.EMAIL_FROM);
+  if (from) return from.includes('<') ? from : `"${BRAND_NAME}" <${from}>`;
+  const user = strip(process.env.EMAIL_USER);
+  if (user) return `"${BRAND_NAME}" <${user}>`;
+  return `"${BRAND_NAME}" <onboarding@resend.dev>`;
+};
+
+const isEmailConfigured = () => {
+  if (isLocalEnvironment()) {
+    return Boolean(strip(process.env.EMAIL_USER) && strip(process.env.EMAIL_PASS));
+  }
+
+  const provider = resolveProvider();
+  if (provider === 'resend') return Boolean(strip(process.env.RESEND_API_KEY));
+  if (provider === 'brevo') return Boolean(strip(process.env.BREVO_API_KEY));
+  return Boolean(strip(process.env.EMAIL_USER) && strip(process.env.EMAIL_PASS));
+};
+
+let transporter = null;
+
+const getTransporter = () => {
+  if (!strip(process.env.EMAIL_USER) || !strip(process.env.EMAIL_PASS)) {
+    throw new Error('EMAIL_USER and EMAIL_PASS must be set for SMTP');
+  }
+
+  if (!transporter) {
+    const host = strip(process.env.EMAIL_HOST) || 'smtp.gmail.com';
+    const port = parseInt(process.env.EMAIL_PORT || '587', 10);
+    const secure = process.env.EMAIL_SECURE === 'true';
+
+    transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: {
+        user: strip(process.env.EMAIL_USER),
+        pass: strip(process.env.EMAIL_PASS).replace(/\s/g, ''),
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000,
+      requireTLS: !secure && port === 587,
+      tls: { minVersion: 'TLSv1.2' },
+      lookup: (hostname, options, callback) => {
+        dns.lookup(hostname, { ...options, family: 4 }, callback);
+      },
+    });
+  }
+
+  return transporter;
+};
+
+const sendViaResend = async ({ to, subject, html }) => {
+  const apiKey = strip(process.env.RESEND_API_KEY);
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is required when EMAIL_PROVIDER=resend');
+  }
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: getFromAddress(),
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || `Resend API error (${response.status})`);
+  }
+
+  return data;
+};
+
+const sendViaBrevo = async ({ to, subject, html }) => {
+  const apiKey = strip(process.env.BREVO_API_KEY);
+  if (!apiKey) {
+    throw new Error('BREVO_API_KEY is required when EMAIL_PROVIDER=brevo');
+  }
+
+  const fromMatch = getFromAddress().match(/<([^>]+)>/);
+  const senderEmail = fromMatch ? fromMatch[1] : strip(process.env.EMAIL_USER);
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': apiKey,
+      'Content-Type': 'application/json',
+      accept: 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: BRAND_NAME, email: senderEmail },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || `Brevo API error (${response.status})`);
+  }
+
+  return data;
+};
+
+const sendViaSmtp = async (mailOptions) => {
+  try {
+    return await getTransporter().sendMail(mailOptions);
+  } catch (error) {
+    console.error('SMTP send failed:', error.code, error.message);
+
+    if (error.code === 'EAUTH') {
+      throw new Error(
+        'Email authentication failed. For Gmail, enable 2-Step Verification and use an App Password as EMAIL_PASS.'
+      );
+    }
+
+    if (['ETIMEDOUT', 'ESOCKET', 'ENETUNREACH', 'ECONNREFUSED'].includes(error.code)) {
+      throw new Error(
+        'SMTP connection failed. Verify EMAIL_HOST, EMAIL_PORT, and network access.'
+      );
+    }
+
+    throw new Error(error.message || 'Failed to send email via SMTP');
+  }
+};
+
+const sendMail = async (mailOptions) => {
+  const provider = resolveProvider();
+
+  if (provider === 'resend') {
+    return sendViaResend(mailOptions);
+  }
+
+  if (provider === 'brevo') {
+    return sendViaBrevo(mailOptions);
+  }
+
+  return sendViaSmtp(mailOptions);
+};
+
+const verifyEmailTransport = async () => {
+  if (!isEmailConfigured()) {
+    throw new Error('Email service is not configured');
+  }
+
+  const provider = resolveProvider();
+
+  if (provider === 'resend' || provider === 'brevo') {
+    return;
+  }
+
+  await getTransporter().verify();
+};
 
 const emailLayout = ({ preheader, title, bodyHtml, footerNote }) => `
 <!DOCTYPE html>
@@ -118,60 +294,50 @@ const bookingConfirmationLayout = ({ userName, eventTitle }) => `
 `;
 
 const sendOTPEmail = async (userEmail, otp, type) => {
-  try {
-    const isAccountVerification = type === 'account_verification';
-    const title = isAccountVerification
-      ? 'Verify Your Account'
-      : 'Verify Your Event Booking';
-    const message = isAccountVerification
-      ? 'Use the one-time password below to verify your Swap Events Hub Client account and complete registration.'
-      : 'Use the one-time password below to verify and submit your event booking request.';
-    const preheader = isAccountVerification
-      ? 'Your account verification code is ready.'
-      : 'Your event booking verification code is ready.';
-    const subject = isAccountVerification
-      ? `${BRAND_NAME} — Account Verification OTP`
-      : `${BRAND_NAME} — Booking Verification OTP`;
+  const isAccountVerification = type === 'account_verification';
+  const title = isAccountVerification ? 'Verify Your Account' : 'Verify Your Event Booking';
+  const message = isAccountVerification
+    ? 'Use the one-time password below to verify your Swap Events Hub Client account and complete registration.'
+    : 'Use the one-time password below to verify and submit your event booking request.';
+  const preheader = isAccountVerification
+    ? 'Your account verification code is ready.'
+    : 'Your event booking verification code is ready.';
+  const subject = isAccountVerification
+    ? `${BRAND_NAME} — Account Verification OTP`
+    : `${BRAND_NAME} — Booking Verification OTP`;
 
-    const bodyHtml = `
-      <p class="text">${message}</p>
-      <div class="otp-box">
-        <div class="otp-label">Your Verification Code</div>
-        <p class="otp-code">${otp}</p>
-      </div>
-      <p class="text">For your security, never share this code with anyone. Our team will never ask for your OTP.</p>
-    `;
+  const bodyHtml = `
+    <p class="text">${message}</p>
+    <div class="otp-box">
+      <div class="otp-label">Your Verification Code</div>
+      <p class="otp-code">${otp}</p>
+    </div>
+    <p class="text">For your security, never share this code with anyone. Our team will never ask for your OTP.</p>
+  `;
 
-    const mailOptions = {
-      from: `"${BRAND_NAME}" <${process.env.EMAIL_USER}>`,
-      to: userEmail,
-      subject,
-      html: emailLayout({ preheader, title, bodyHtml }),
-    };
+  await sendMail({
+    to: userEmail,
+    subject,
+    html: emailLayout({ preheader, title, bodyHtml }),
+  });
 
-    await transporter.sendMail(mailOptions);
-    console.log(`OTP sent to ${userEmail} for ${type}`);
-  } catch (error) {
-    console.error('Error sending OTP email:', error);
-  }
+  console.log(`OTP sent to ${userEmail} for ${type}`);
 };
 
 const sendBookingEmail = async (userEmail, userName, eventTitle) => {
-  try {
-    const mailOptions = {
-      from: `"${BRAND_NAME}" <${process.env.EMAIL_USER}>`,
-      to: userEmail,
-      subject: `${BRAND_NAME} — Booking Confirmed: ${eventTitle}`,
-      html: bookingConfirmationLayout({ userName, eventTitle }),
-    };
-    await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully to', userEmail);
-  } catch (error) {
-    console.error('Error sending email:', error);
-  }
+  await sendMail({
+    to: userEmail,
+    subject: `${BRAND_NAME} — Booking Confirmed: ${eventTitle}`,
+    html: bookingConfirmationLayout({ userName, eventTitle }),
+  });
+
+  console.log('Booking confirmation email sent to', userEmail);
 };
 
 module.exports = {
   sendOTPEmail,
   sendBookingEmail,
+  verifyEmailTransport,
+  isEmailConfigured,
+  resolveProvider,
 };

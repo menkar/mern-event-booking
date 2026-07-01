@@ -31,10 +31,10 @@ export const AuthProvider = ({children}) => {
 
     const register = async (name, email, password) => {
         try {
-            const data = await api.post('/auth/register', {name, email, password});
+            const { data } = await api.post('/auth/register', { name, email, password });
             return data;
-        } catch(error) {
-            throw error.response?.data?.message || 'Registration failed';
+        } catch (error) {
+            throw error.response?.data?.error || error.response?.data?.message || 'Registration failed';
         }
     };
 
@@ -63,6 +63,9 @@ export const AuthProvider = ({children}) => {
         try {
             await api.post('/auth/login', { email, password });
         } catch (error) {
+            if (error.response?.status === 503 && error.response?.data?.needsVerification) {
+                throw error.response?.data?.message || 'Unable to send verification email';
+            }
             if (error.response?.data?.needsVerification) {
                 return { message: 'OTP sent successfully' };
             }

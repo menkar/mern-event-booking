@@ -29,11 +29,20 @@ const registerUser = async(req, res) => {
         
         const otp = generateOtp();
         const normalizedEmail = normalizeEmail(email);
-        console.log(`OTP for ${normalizedEmail} : ${otp}`);
 
         await OTP.findOneAndDelete({ email: normalizedEmail, action: 'account_verification' });
         await OTP.create({ email: normalizedEmail, otp, action: 'account_verification' });
-        await sendOTPEmail(email, otp, 'account_verification');
+
+        try {
+            await sendOTPEmail(email, otp, 'account_verification');
+        } catch (emailError) {
+            await User.findByIdAndDelete(user._id);
+            await OTP.findOneAndDelete({ email: normalizedEmail, action: 'account_verification' });
+            console.error('Registration email failed:', emailError.message);
+            return res.status(503).json({
+                error: emailError.message || 'Unable to send verification email. Please try again later.',
+            });
+        }
         
         res.status(201).json({message: "User registered successfully. Please check your email for OTP to verify your account.",
             email: user.email
@@ -49,9 +58,14 @@ const loginUser = async(req, res) => {
     try {
         const {email, password} = req.body;
         const user = await User.findOne({email});
+
+        if (!user) {
+            return res.status(400).json({message: "Invalid Credentials"});
+        }
+
         const isMatch = await bcrypt.compare(password, user.password);
         
-        if (!user || !isMatch) {
+        if (!isMatch) {
             return res.status(400).json({message: "Invalid Credentials"});
         }
 
@@ -60,8 +74,18 @@ const loginUser = async(req, res) => {
             const normalizedEmail = normalizeEmail(user.email);
             await OTP.findOneAndDelete({ email: normalizedEmail, action: 'account_verification' });
             await OTP.create({ email: normalizedEmail, otp, action: 'account_verification' });
-            await sendOTPEmail(user.email, otp, 'account_verification');
-            console.log(`OTP for ${normalizedEmail} : ${otp}`);
+
+            try {
+                await sendOTPEmail(user.email, otp, 'account_verification');
+            } catch (emailError) {
+                console.error('Login OTP email failed:', emailError.message);
+                return res.status(503).json({
+                    message: emailError.message || 'Unable to send verification email. Please try again later.',
+                    needsVerification: true,
+                    email: user.email,
+                });
+            }
+
             return res.status(403).json({ message: 'Account not verified', needsVerification: true, email: user.email});
         }
 

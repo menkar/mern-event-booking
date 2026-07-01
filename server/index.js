@@ -6,6 +6,7 @@ const mongoose = require("mongoose")
 const authRoutes = require("./routes/auth");
 const eventRoutes = require("./routes/events");
 const bookingRoutes = require("./routes/bookings");
+const { verifyEmailTransport, isEmailConfigured } = require("./utils/email");
 
 const cors = require("cors");
 
@@ -32,8 +33,19 @@ if (process.env.NODE_ENV === "production") {
 
 // Connect to DB
 mongoose.connect(process.env.MONGODB_URI)
-.then(() => {
+.then(async () => {
     console.log("Connected to MongoDB");
+
+    if (isEmailConfigured()) {
+        try {
+            await verifyEmailTransport();
+            console.log("Email service verified and ready");
+        } catch (error) {
+            console.error("Email service configuration error:", error.message);
+        }
+    } else {
+        console.warn('Email service is not configured for this environment');
+    }
 })
 . catch((error)=> {
     console.error("Error connecting to  MongoDB : ", error);

@@ -382,8 +382,19 @@ EMAIL_PASS=your_email_app_password
 | `PORT` | API port (default `5000`) |
 | `MONGODB_URI` | MongoDB connection string |
 | `JWT_SECRET` | Long random string for signing JWT tokens |
-| `EMAIL_USER` | SMTP email address |
-| `EMAIL_PASS` | SMTP app password |
+| `EMAIL_USER` | SMTP email address (local development) |
+| `EMAIL_PASS` | Gmail App Password (local development only) |
+| `EMAIL_PROVIDER` | `smtp` (local) or `resend` (Render production) |
+| `RESEND_API_KEY` | Resend API key — **required on Render** |
+| `EMAIL_FROM` | Sender address (e.g. `onboarding@resend.dev` for Resend testing) |
+
+> **Local development:** Use `EMAIL_PROVIDER=smtp` with Gmail App Password.
+>
+> **Render production:** Render **blocks outbound SMTP** (ports 465/587). Gmail SMTP will fail with `ETIMEDOUT` / `ENETUNREACH`. Use the **Resend HTTP API** instead:
+> 1. Create a free account at [resend.com](https://resend.com)
+> 2. Generate an API key
+> 3. On Render set: `EMAIL_PROVIDER=resend`, `RESEND_API_KEY=re_...`, `EMAIL_FROM=onboarding@resend.dev`
+> 4. Redeploy
 
 Optional client override — create `client/.env.local` if the API URL differs:
 
