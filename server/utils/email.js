@@ -1,8 +1,5 @@
 const dns = require('dns');
 const nodemailer = require('nodemailer');
-const dotenv = require('dotenv');
-
-dotenv.config();
 
 const BRAND_NAME = 'Swap Events Hub Client';
 const BRAND_COLOR = '#4f46e5';

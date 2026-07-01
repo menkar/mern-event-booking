@@ -4,13 +4,14 @@ const OTP = require("../models/Otp");
 const jwt = require('jsonwebtoken');
 const { sendOTPEmail } = require("../utils/email");
 const { normalizeOtp, normalizeEmail } = require("../utils/otpHelpers");
+const { getJwtSecret } = require("../config/env");
 
 const generateOtp = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 const generateToken = (id, role) => {
-    return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    return jwt.sign({ id, role }, getJwtSecret(), { expiresIn: '30d' });
 };
 
 const registerUser = async(req, res) => {
@@ -99,6 +100,10 @@ const loginUser = async(req, res) => {
         });
 
     } catch(error) {
+        if (error.message?.includes('JWT_SECRET')) {
+            console.error('Login failed — JWT configuration error:', error.message);
+            return res.status(503).json({ message: 'Authentication service is temporarily unavailable' });
+        }
         res.status(500).json({message: 'Server Error', error: error.message});
     }
 }
