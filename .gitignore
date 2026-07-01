@@ -44,6 +44,13 @@ config/production.local.json
 docker-compose.override.yml
 docker-compose.override.yaml
 
+# Local deployment docs (private — do not commit)
+docs/DEPLOY-RENDER.md
+
+# Screenshots that may contain email addresses or private data
+docs/screenshots/11-email-booking-otp.png
+docs/screenshots/12-email-booking-confirmed.png
+
 # =========================
 # Dependencies
 # =========================
